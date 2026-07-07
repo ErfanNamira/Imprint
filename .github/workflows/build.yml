@@ -1,4 +1,4 @@
-name: Build
+name: Build & Release Imprint
 
 on:
   workflow_dispatch:
@@ -90,3 +90,30 @@ jobs:
           path: |
             dist/imprint*
             !dist/**/*.spec
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Zip each platform's artifact
+        run: |
+          cd artifacts
+          for dir in */; do
+            name="${dir%/}"
+            zip -r -j "../${name}.zip" "$dir"
+          done
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.version }}
+          name: "Imprint ${{ inputs.version }}"
+          files: "*.zip"
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
