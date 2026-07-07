@@ -100,12 +100,21 @@ jobs:
         with:
           path: artifacts
 
-      - name: Zip each platform's artifact
+      - name: Rename executables per platform
         run: |
           cd artifacts
           for dir in */; do
             name="${dir%/}"
-            zip -r -j "../${name}.zip" "$dir"
+            case "$name" in
+              imprint-windows*) plain="imprint-windows"; ext=".exe";;
+              imprint-macos*)   plain="imprint-macos";   ext="";;
+              imprint-linux*)   plain="imprint-linux";   ext="";;
+              *) continue;;
+            esac
+            for f in "$dir"*; do
+              [ -f "$f" ] || continue
+              cp "$f" "../${plain}${ext}"
+            done
           done
 
       - name: Create GitHub Release
@@ -113,7 +122,10 @@ jobs:
         with:
           tag_name: ${{ inputs.version }}
           name: "Imprint ${{ inputs.version }}"
-          files: "*.zip"
+          files: |
+            imprint-windows.exe
+            imprint-macos
+            imprint-linux
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
