@@ -1,0 +1,92 @@
+name: Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to tag and build"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create and push tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
+          git tag -a "${{ inputs.version }}" -m "Release ${{ inputs.version }}"
+          git push origin "${{ inputs.version }}"
+
+  build:
+    needs: tag
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact_name: imprint-windows
+            icon: icon.ico
+          - os: macos-latest
+            artifact_name: imprint-macos
+            icon: icon.icns
+          - os: ubuntu-latest
+            artifact_name: imprint-linux
+            icon: icon.ico
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build executable (Windows)
+        if: runner.os == 'Windows'
+        run: >
+          pyinstaller --onefile --name imprint
+          --icon icon.ico
+          imprint.py
+
+      - name: Build executable (macOS)
+        if: runner.os == 'macOS'
+        run: >
+          pyinstaller --onefile --name imprint
+          --icon icon.icns
+          imprint.py
+
+      - name: Build executable (Linux)
+        if: runner.os == 'Linux'
+        run: >
+          pyinstaller --onefile --name imprint
+          imprint.py
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}-${{ inputs.version }}
+          path: |
+            dist/imprint*
+            !dist/**/*.spec
