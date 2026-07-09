@@ -88,7 +88,7 @@ jobs:
         with:
           name: ${{ matrix.artifact_name }}-${{ inputs.version }}
           path: |
-            dist/imprint*
+            dist/Imprint*
             !dist/**/*.spec
 
   release:
@@ -106,9 +106,9 @@ jobs:
           for dir in */; do
             name="${dir%/}"
             case "$name" in
-              Imprint-windows*) plain="Imprint-windows"; ext=".exe";;
-              Imprint-macos*)   plain="Imprint-macos";   ext="";;
-              Imprint-linux*)   plain="Imprint-linux";   ext="";;
+              imprint-windows*) plain="Imprint-windows"; ext=".exe";;
+              imprint-macos*)   plain="Imprint-macos";   ext="";;
+              imprint-linux*)   plain="Imprint-linux";   ext="";;
               *) continue;;
             esac
             for f in "$dir"*; do
