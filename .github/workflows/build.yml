@@ -66,21 +66,21 @@ jobs:
       - name: Build executable (Windows)
         if: runner.os == 'Windows'
         run: >
-          pyinstaller --onefile --name imprint
+          pyinstaller --onefile --name Imprint
           --icon icon.ico
           imprint.py
 
       - name: Build executable (macOS)
         if: runner.os == 'macOS'
         run: >
-          pyinstaller --onefile --name imprint
+          pyinstaller --onefile --name Imprint
           --icon icon.icns
           imprint.py
 
       - name: Build executable (Linux)
         if: runner.os == 'Linux'
         run: >
-          pyinstaller --onefile --name imprint
+          pyinstaller --onefile --name Imprint
           imprint.py
 
       - name: Upload build artifact
@@ -106,9 +106,9 @@ jobs:
           for dir in */; do
             name="${dir%/}"
             case "$name" in
-              imprint-windows*) plain="imprint-windows"; ext=".exe";;
-              imprint-macos*)   plain="imprint-macos";   ext="";;
-              imprint-linux*)   plain="imprint-linux";   ext="";;
+              Imprint-windows*) plain="Imprint-windows"; ext=".exe";;
+              Imprint-macos*)   plain="Imprint-macos";   ext="";;
+              Imprint-linux*)   plain="Imprint-linux";   ext="";;
               *) continue;;
             esac
             for f in "$dir"*; do
@@ -123,9 +123,9 @@ jobs:
           tag_name: ${{ inputs.version }}
           name: "Imprint ${{ inputs.version }}"
           files: |
-            imprint-windows.exe
-            imprint-macos
-            imprint-linux
+            Imprint-windows.exe
+            Imprint-macos
+            Imprint-linux
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
