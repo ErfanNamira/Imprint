@@ -22,6 +22,7 @@ import os
 import re
 import sqlite3
 import sys
+import threading
 import time
 from datetime import datetime
 from pathlib import Path
@@ -140,9 +141,16 @@ def save_config(cfg):
 # History (SQLite)
 # --------------------------------------------------------------------------
 
+_DB_LOCK = threading.Lock()
+
+
 def get_db():
     APP_DIR.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(HISTORY_DB_PATH)
+    # check_same_thread=False: this connection is shared across the
+    # ThreadPoolExecutor worker threads used for concurrent downloads.
+    # All access to it is serialized via _DB_LOCK (sqlite3 connections
+    # are not safe to use concurrently from multiple threads without it).
+    conn = sqlite3.connect(HISTORY_DB_PATH, check_same_thread=False)
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS history (
@@ -163,20 +171,22 @@ def get_db():
 
 
 def log_history(conn, page_url, image_url, saved_path, filesize, status, content_hash=""):
-    conn.execute(
-        "INSERT INTO history (page_url, image_url, saved_path, filesize, content_hash, status, timestamp) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (page_url, image_url, saved_path, filesize, content_hash, status,
-         datetime.now().isoformat(timespec="seconds")),
-    )
-    conn.commit()
+    with _DB_LOCK:
+        conn.execute(
+            "INSERT INTO history (page_url, image_url, saved_path, filesize, content_hash, status, timestamp) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (page_url, image_url, saved_path, filesize, content_hash, status,
+             datetime.now().isoformat(timespec="seconds")),
+        )
+        conn.commit()
 
 
 def hash_already_downloaded(conn, content_hash):
-    row = conn.execute(
-        "SELECT saved_path FROM history WHERE content_hash = ? AND status = 'success' LIMIT 1",
-        (content_hash,),
-    ).fetchone()
+    with _DB_LOCK:
+        row = conn.execute(
+            "SELECT saved_path FROM history WHERE content_hash = ? AND status = 'success' LIMIT 1",
+            (content_hash,),
+        ).fetchone()
     return row[0] if row else None
 
 
