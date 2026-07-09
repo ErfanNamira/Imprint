@@ -733,7 +733,7 @@ def action_stats(cfg):
 
 MENU_OPTIONS = [
     ("1", "Download images from a single page", action_single_url),
-    ("2", "Batch download from a text file (one URL per line)", action_batch),
+    ("2", "Batch download from a text file", action_batch),
     ("3", "View download history", action_view_history),
     ("4", "View statistics", action_stats),
     ("5", "Settings", action_settings),
